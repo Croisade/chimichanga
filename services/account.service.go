@@ -48,8 +48,8 @@ func (s *AccountServiceImpl) GetAccount(accountId string) (*models.Account, erro
 	return result, err
 }
 
-func (s *AccountServiceImpl) GetAccounts() ([]models.Account, error) {
-	var results []models.Account
+func (s *AccountServiceImpl) GetAccounts() ([]*models.Account, error) {
+	var results []*models.Account
 	var err error
 	var cursor *mongo.Cursor
 	cursor, err = s.accountcollection.Find(s.ctx, bson.M{})

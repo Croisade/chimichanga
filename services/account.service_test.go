@@ -32,7 +32,7 @@ func TestAccountService(t *testing.T) {
 	})
 
 	t.Run("get Accounts", func(t *testing.T) {
-		var got []models.Account
+		var got []*models.Account
 		want := &models.Account{AccountId: "234", Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
 		accountService.CreateAccount(want)

@@ -14,43 +14,54 @@ import (
 )
 
 var (
-	server         *gin.Engine
+	server      *gin.Engine
+	ctx         context.Context
+	mongoClient *mongo.Client
+	err         error
+
+	accountService    services.AccountService
+	accountController controllers.AccountController
+	accountCollection *mongo.Collection
+
+	usercollection *mongo.Collection
 	userservice    services.UserService
 	usercontroller controllers.UserController
-	ctx            context.Context
-	usercollection *mongo.Collection
-	mongoclient    *mongo.Client
-	err            error
 )
 
 func init() {
 	ctx = context.TODO()
 
-	mongoconn := options.Client().ApplyURI("mongodb://localhost:27017")
-	mongoclient, err = mongo.Connect(ctx, mongoconn)
+	mongoConn := options.Client().ApplyURI("mongodb://localhost:27017")
+	mongoClient, err = mongo.Connect(ctx, mongoConn)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = mongoclient.Ping(ctx, readpref.Primary())
+	err = mongoClient.Ping(ctx, readpref.Primary())
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Println("mongo connection established")
 
-	usercollection = mongoclient.Database("CorroYouRun").Collection("runs")
-	userservice = services.NewUserService(usercollection, ctx)
+	accountCollection = mongoClient.Database("CorroYouRun").Collection("accounts")
+	usercollection = mongoClient.Database("CorroYouRun").Collection("runs")
+
+	// userservice = services.NewUserService(usercollection, ctx)
 	usercontroller = controllers.New(userservice)
+
+	accountService = services.NewAccountServiceImpl(accountCollection, ctx)
+	accountController = controllers.NewAccountController(accountService)
+
 	server = gin.Default()
 }
 
 func main() {
-	defer mongoclient.Disconnect(ctx)
+	defer mongoClient.Disconnect(ctx)
 
-	basepath := server.Group("/v1")
-	usercontroller.RegisterUserRoutes(basepath)
-
+	basePath := server.Group("/v1")
+	usercontroller.RegisterUserRoutes(basePath)
+	accountController.RegisterAccountRoutes(basePath)
 	log.Fatal(server.Run(":9090"))
 }

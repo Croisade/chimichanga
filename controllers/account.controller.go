@@ -47,14 +47,14 @@ func (ac *AccountController) GetAccount(ctx *gin.Context) {
 }
 
 func (ac *AccountController) GetAccounts(ctx *gin.Context) {
-	var users []*models.Account
+	var accounts []*models.Account
 
-	users, err := ac.AccountService.GetAccounts()
+	accounts, err := ac.AccountService.GetAccounts()
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, users)
+	ctx.JSON(http.StatusOK, accounts)
 	return
 }
 
@@ -88,8 +88,8 @@ func (ac *AccountController) UpdateAccount(ctx *gin.Context) {
 func (ac *AccountController) RegisterAccountRoutes(rg *gin.RouterGroup) {
 	accountRoute := rg.Group("/account")
 	accountRoute.POST("/create", ac.CreateAccount)
-	accountRoute.GET("/get/:name", ac.GetAccount)
+	accountRoute.GET("/get/:accountId", ac.GetAccount)
 	accountRoute.GET("/fetch", ac.GetAccounts)
-	accountRoute.DELETE("/delete/:userId", ac.DeleteAccount)
+	accountRoute.DELETE("/delete/:accountId", ac.DeleteAccount)
 	accountRoute.PUT("/update", ac.UpdateAccount)
 }
