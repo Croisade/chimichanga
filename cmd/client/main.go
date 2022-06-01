@@ -40,7 +40,7 @@ func init() {
 
 	fmt.Println("mongo connection established")
 
-	usercollection = mongoclient.Database("userdb").Collection("users")
+	usercollection = mongoclient.Database("CorroYouRun").Collection("runs")
 	userservice = services.NewUserService(usercollection, ctx)
 	usercontroller = controllers.New(userservice)
 	server = gin.Default()
