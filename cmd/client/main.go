@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/croisade/chimichanga/controllers"
-	"github.com/croisade/chimichanga/services"
+	"github.com/croisade/chimichanga/pkg/conf"
+	"github.com/croisade/chimichanga/pkg/controllers"
+	"github.com/croisade/chimichanga/pkg/services"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -29,9 +30,15 @@ var (
 )
 
 func init() {
+	config, err := conf.LoadConfig("../../")
+	if err != nil {
+		log.Fatal("cannot load config:", err)
+	}
+
+	//? Can I plug the the config into the context?
 	ctx = context.TODO()
 
-	mongoConn := options.Client().ApplyURI("mongodb://localhost:27017")
+	mongoConn := options.Client().ApplyURI(config.MongoURI)
 	mongoClient, err = mongo.Connect(ctx, mongoConn)
 
 	if err != nil {
@@ -48,7 +55,7 @@ func init() {
 	accountCollection = mongoClient.Database("CorroYouRun").Collection("accounts")
 	usercollection = mongoClient.Database("CorroYouRun").Collection("runs")
 
-	// userservice = services.NewUserService(usercollection, ctx)
+	userservice = services.NewUserService(usercollection, ctx)
 	usercontroller = controllers.New(userservice)
 
 	accountService = services.NewAccountServiceImpl(accountCollection, ctx)

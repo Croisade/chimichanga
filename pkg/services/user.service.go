@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/croisade/chimichanga/models"
+	"github.com/croisade/chimichanga/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )

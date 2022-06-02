@@ -3,7 +3,7 @@ package services
 import (
 	"testing"
 
-	"github.com/croisade/chimichanga/models"
+	"github.com/croisade/chimichanga/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
 )

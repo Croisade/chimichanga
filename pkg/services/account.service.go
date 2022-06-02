@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/croisade/chimichanga/models"
+	"github.com/croisade/chimichanga/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -31,10 +31,19 @@ func NewAccountServiceImpl(accountcollection *mongo.Collection, ctx context.Cont
 }
 
 func (s *AccountServiceImpl) CreateAccount(account *models.Account) (*models.Account, error) {
+	filter := bson.M{"accountId": account.AccountId}
+	var result *models.Account
+
 	account.CreatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 	account.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 
 	_, err := s.accountcollection.InsertOne(s.ctx, account)
+
+	if err != nil {
+		return nil, err
+	}
+
+	err = s.accountcollection.FindOne(s.ctx, filter).Decode(&result)
 	return account, err
 }
 

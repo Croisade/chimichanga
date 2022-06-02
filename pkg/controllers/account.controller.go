@@ -3,8 +3,8 @@ package controllers
 import (
 	"net/http"
 
-	"github.com/croisade/chimichanga/models"
-	"github.com/croisade/chimichanga/services"
+	"github.com/croisade/chimichanga/pkg/models"
+	"github.com/croisade/chimichanga/pkg/services"
 	"github.com/gin-gonic/gin"
 )
 
