@@ -16,11 +16,17 @@ type AccountService interface {
 	GetAccounts() ([]*models.Account, error)
 	DeleteAccount(string) error
 	UpdateAccount(*models.Account) error
+	Login(*Login) (*models.Account, error)
 }
 
 type AccountServiceImpl struct {
 	accountcollection *mongo.Collection
 	ctx               context.Context
+}
+
+type Login struct {
+	Email    string `json:"email" bson:"email" binding:"required"`
+	Password string `json:"password" bson:"password" binding:"required"`
 }
 
 func NewAccountServiceImpl(accountcollection *mongo.Collection, ctx context.Context) *AccountServiceImpl {
@@ -31,11 +37,13 @@ func NewAccountServiceImpl(accountcollection *mongo.Collection, ctx context.Cont
 }
 
 func (s *AccountServiceImpl) CreateAccount(account *models.Account) (*models.Account, error) {
-	filter := bson.M{"accountId": account.AccountId}
 	var result *models.Account
 
+	account.AccountId = primitive.NewObjectID().Hex()
 	account.CreatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 	account.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
+
+	filter := bson.M{"accountId": account.AccountId}
 
 	_, err := s.accountcollection.InsertOne(s.ctx, account)
 
@@ -109,4 +117,14 @@ func (s *AccountServiceImpl) UpdateAccount(account *models.Account) error {
 	}
 
 	return nil
+}
+
+func (s *AccountServiceImpl) Login(login *Login) (*models.Account, error) {
+	var result *models.Account
+	var err error
+
+	filter := bson.M{"email": login.Email, "password": login.Password}
+	err = s.accountcollection.FindOne(s.ctx, filter).Decode(&result)
+
+	return result, err
 }

@@ -10,11 +10,13 @@ import (
 
 type AccountController struct {
 	AccountService services.AccountService
+	JWTService     services.JWTAuthService
 }
 
-func NewAccountController(accountService services.AccountService) AccountController {
+func NewAccountController(accountService services.AccountService, jwtService services.JWTAuthService) AccountController {
 	return AccountController{
 		AccountService: accountService,
+		JWTService:     jwtService,
 	}
 }
 
@@ -85,6 +87,43 @@ func (ac *AccountController) UpdateAccount(ctx *gin.Context) {
 	return
 }
 
+func (ac *AccountController) Login(ctx *gin.Context) {
+	type JWTtoken struct {
+		token        string
+		refreshToken string
+	}
+
+	var login *services.Login
+
+	if err := ctx.ShouldBindJSON(&login); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		return
+	}
+
+	_, err := ac.AccountService.Login(login)
+
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+	}
+
+	token, err := ac.JWTService.CreateToken()
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+	}
+
+	refreshTokens, err := ac.JWTService.CreateRefreshToken()
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+	}
+
+	result := JWTtoken{token: token, refreshToken: refreshTokens}
+	ctx.JSON(http.StatusOK, result)
+	return
+}
+
+func (ac *AccountController) Token(ctx *gin.Context)  {}
+func (ac *AccountController) Logout(ctx *gin.Context) {}
+
 func (ac *AccountController) RegisterAccountRoutes(rg *gin.RouterGroup) {
 	accountRoute := rg.Group("/account")
 	accountRoute.POST("/create", ac.CreateAccount)
@@ -92,4 +131,7 @@ func (ac *AccountController) RegisterAccountRoutes(rg *gin.RouterGroup) {
 	accountRoute.GET("/fetch", ac.GetAccounts)
 	accountRoute.DELETE("/delete/:accountId", ac.DeleteAccount)
 	accountRoute.PUT("/update", ac.UpdateAccount)
+	accountRoute.PUT("/login", ac.UpdateAccount)
+	accountRoute.PUT("/token", ac.UpdateAccount)
+	accountRoute.PUT("/logout", ac.UpdateAccount)
 }
