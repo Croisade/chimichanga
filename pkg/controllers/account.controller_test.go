@@ -88,3 +88,43 @@ func TestLogin(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	assert.Equal(t, 3, len(strings.Split(token.Token, ".")))
 }
+
+func TestCreate(t *testing.T) {
+	t.Run("Should create an account", func(t *testing.T) {
+		account := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
+		response := &models.Account{}
+		r := SetupRouter()
+		r.GET("/account/create", accountController.CreateAccount)
+
+		jsonValue, _ := json.Marshal(account)
+		req, _ := http.NewRequest("GET", "/account/create", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		json.Unmarshal(w.Body.Bytes(), response)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, account.Email, response.Email)
+	})
+
+	t.Run("Should raise if a required field is missing", func(t *testing.T) {
+		account := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first"}
+		type Response struct {
+			Errors []ErrorMsg `json:"errors"`
+		}
+
+		response := &Response{}
+
+		r := SetupRouter()
+		r.GET("/account/create", accountController.CreateAccount)
+
+		jsonValue, _ := json.Marshal(account)
+		req, _ := http.NewRequest("GET", "/account/create", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		json.Unmarshal(w.Body.Bytes(), &response)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, response.Errors[0].Field, "LastName")
+		assert.Equal(t, response.Errors[0].Message, "This field is required")
+	})
+}
