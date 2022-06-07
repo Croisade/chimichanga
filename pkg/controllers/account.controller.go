@@ -13,6 +13,11 @@ type AccountController struct {
 	JWTService     services.JWTAuthService
 }
 
+type JWTtoken struct {
+	Token        string `json:"token"`
+	RefreshToken string `json:"refreshToken"`
+}
+
 func NewAccountController(accountService services.AccountService, jwtService services.JWTAuthService) AccountController {
 	return AccountController{
 		AccountService: accountService,
@@ -88,10 +93,6 @@ func (ac *AccountController) UpdateAccount(ctx *gin.Context) {
 }
 
 func (ac *AccountController) Login(ctx *gin.Context) {
-	type JWTtoken struct {
-		token        string
-		refreshToken string
-	}
 
 	var login *services.Login
 
@@ -116,7 +117,7 @@ func (ac *AccountController) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
 	}
 
-	result := JWTtoken{token: token, refreshToken: refreshTokens}
+	result := JWTtoken{Token: token, RefreshToken: refreshTokens}
 	ctx.JSON(http.StatusOK, result)
 	return
 }
