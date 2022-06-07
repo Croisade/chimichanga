@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/croisade/chimichanga/pkg/models"
@@ -10,13 +11,16 @@ import (
 
 func TestAccountService(t *testing.T) {
 	accountService := NewAccountServiceImpl(accountsCollection, ctx)
-	want := &models.Account{AccountId: "123", Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
+	want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
 	t.Run("create Account", func(t *testing.T) {
 		var got *models.Account
 		accountService.CreateAccount(want)
 
 		err := accountsCollection.FindOne(ctx, bson.M{"firstName": "first"}).Decode(&got)
+
+		want.AccountId = got.AccountId
+
 		assert.Nil(t, err)
 		assert.Equal(t, want, got)
 
@@ -24,8 +28,8 @@ func TestAccountService(t *testing.T) {
 
 	t.Run("get Account", func(t *testing.T) {
 		var got *models.Account
-
-		got, err := accountService.GetAccount("123")
+		fmt.Println(want)
+		got, err := accountService.GetAccount(want.AccountId)
 
 		assert.Nil(t, err)
 		assert.Contains(t, got.AccountId, want.AccountId)
@@ -33,7 +37,7 @@ func TestAccountService(t *testing.T) {
 
 	t.Run("get Accounts", func(t *testing.T) {
 		var got []*models.Account
-		want := &models.Account{AccountId: "234", Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
+		want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
 		accountService.CreateAccount(want)
 		got, err := accountService.GetAccounts()
@@ -44,10 +48,10 @@ func TestAccountService(t *testing.T) {
 	})
 
 	t.Run("Update Account", func(t *testing.T) {
-		input := &models.Account{AccountId: "123", FirstName: "Middle"}
+		input := &models.Account{AccountId: want.AccountId, FirstName: "Middle"}
 
 		accountService.UpdateAccount(input)
-		got, err := accountService.GetAccount("123")
+		got, err := accountService.GetAccount(want.AccountId)
 
 		assert.Nil(t, err)
 		assert.NotEqual(t, want.FirstName, got.FirstName)
