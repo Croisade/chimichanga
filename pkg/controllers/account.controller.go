@@ -25,6 +25,10 @@ type ErrorMsg struct {
 	Message string `json:"message"`
 }
 
+type ErrorResponse struct {
+	Errors string `json:"errors"`
+}
+
 func NewAccountController(accountService services.AccountService, jwtService services.JWTAuthService) AccountController {
 	return AccountController{
 		AccountService: accountService,
@@ -65,7 +69,7 @@ func (ac *AccountController) CreateAccount(ctx *gin.Context) {
 	}
 	result, err := ac.AccountService.CreateAccount(&account)
 	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadGateway, gin.H{"errors": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, result)
@@ -76,7 +80,7 @@ func (ac *AccountController) GetAccount(ctx *gin.Context) {
 	accountId := ctx.Param("AccountId")
 	result, err := ac.AccountService.GetAccount(accountId)
 	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadGateway, gin.H{"errors": err.Error()})
 		return
 	}
 
@@ -89,7 +93,7 @@ func (ac *AccountController) GetAccounts(ctx *gin.Context) {
 
 	accounts, err := ac.AccountService.GetAccounts()
 	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadGateway, gin.H{"errors": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, accounts)
@@ -100,23 +104,23 @@ func (ac *AccountController) DeleteAccount(ctx *gin.Context) {
 	accountId := ctx.Param("AccountId")
 	err := ac.AccountService.DeleteAccount(accountId)
 	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadGateway, gin.H{"errors": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+	ctx.JSON(http.StatusOK, gin.H{"errors": "success"})
 	return
 }
 
 func (ac *AccountController) UpdateAccount(ctx *gin.Context) {
 	var account models.Account
 	if err := ctx.ShouldBindJSON(&account); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
 		return
 	}
 
 	result, err := ac.AccountService.CreateAccount(&account)
 	if err != nil {
-		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusBadGateway, gin.H{"errors": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusOK, result)
@@ -124,27 +128,30 @@ func (ac *AccountController) UpdateAccount(ctx *gin.Context) {
 }
 
 func (ac *AccountController) Login(ctx *gin.Context) {
-
 	var login *services.Login
 
 	if err := ctx.ShouldBindJSON(&login); err != nil {
 		ac.handleValidationError(ctx, err)
+		return
 	}
 
 	_, err := ac.AccountService.Login(login)
 
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusNotFound, gin.H{"errors": err.Error()})
+		return
 	}
 
 	token, err := ac.JWTService.CreateToken()
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
 	}
 
 	refreshTokens, err := ac.JWTService.CreateRefreshToken()
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"message": err.Error()})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
 	}
 
 	result := JWTtoken{Token: token, RefreshToken: refreshTokens}

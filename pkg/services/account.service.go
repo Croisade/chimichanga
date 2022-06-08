@@ -107,7 +107,6 @@ func (s *AccountServiceImpl) UpdateAccount(account *models.Account) error {
 		existingAccount.LastName = account.LastName
 	}
 
-	existingAccount.CreatedAt = account.CreatedAt
 	existingAccount.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 
 	_, err = s.accountcollection.UpdateOne(s.ctx, filter, bson.M{"$set": existingAccount})
