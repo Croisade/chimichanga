@@ -10,8 +10,18 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        mongodb-version: ['4.4.6']
+        
     steps:
     - uses: actions/checkout@v3
+
+    - name: MongoDB in GitHub Actions
+      uses: supercharge/mongodb-github-action@1.7.0
+      with:
+        mongodb-version: ${{ matrix.mongodb-version }}
+
 
     - name: Set up Go
       uses: actions/setup-go@v3
