@@ -15,9 +15,17 @@ type AccountController struct {
 	JWTService     services.JWTAuthService
 }
 
+type RefreshToken struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
+}
+
 type JWTtoken struct {
 	Token        string `json:"token"`
 	RefreshToken string `json:"refreshToken"`
+}
+
+type LogoutValidation struct {
+	AccountId string `json:"accountId" binding:"required"`
 }
 
 type ErrorMsg struct {
@@ -59,6 +67,8 @@ func (ac *AccountController) handleValidationError(ctx *gin.Context, err error) 
 		ctx.JSON(http.StatusBadRequest, gin.H{"errors": out})
 		return
 	}
+	ctx.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
+	return
 }
 
 func (ac *AccountController) CreateAccount(ctx *gin.Context) {
@@ -159,8 +169,44 @@ func (ac *AccountController) Login(ctx *gin.Context) {
 	return
 }
 
-func (ac *AccountController) Token(ctx *gin.Context)  {}
-func (ac *AccountController) Logout(ctx *gin.Context) {}
+func (ac *AccountController) Token(ctx *gin.Context) {
+	var refreshToken *RefreshToken
+	if err := ctx.ShouldBindJSON(&refreshToken); err != nil {
+		//@ @TODO Validate for jwt not for string
+		ac.handleValidationError(ctx, err)
+		return
+	}
+
+	_, err := ac.JWTService.ValidateToken(refreshToken.RefreshToken)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	token, err := ac.JWTService.CreateToken()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	refreshTokens, err := ac.JWTService.CreateRefreshToken()
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	result := JWTtoken{Token: token, RefreshToken: refreshTokens}
+	ctx.JSON(http.StatusOK, result)
+	return
+}
+func (ac *AccountController) Logout(ctx *gin.Context) {
+	var logoutValidation *LogoutValidation
+	if err := ctx.ShouldBindJSON(&logoutValidation); err != nil {
+		ac.handleValidationError(ctx, err)
+		return
+	}
+
+}
 
 func (ac *AccountController) RegisterAccountRoutes(rg *gin.RouterGroup) {
 	accountRoute := rg.Group("/account")
@@ -169,7 +215,7 @@ func (ac *AccountController) RegisterAccountRoutes(rg *gin.RouterGroup) {
 	accountRoute.GET("/fetch", ac.GetAccounts)
 	accountRoute.DELETE("/delete/:accountId", ac.DeleteAccount)
 	accountRoute.PUT("/update", ac.UpdateAccount)
-	accountRoute.PUT("/login", ac.UpdateAccount)
-	accountRoute.PUT("/token", ac.UpdateAccount)
-	accountRoute.PUT("/logout", ac.UpdateAccount)
+	accountRoute.PUT("/login", ac.Login)
+	accountRoute.PUT("/token", ac.Token)
+	accountRoute.PUT("/logout", ac.Logout)
 }
