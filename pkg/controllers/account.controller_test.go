@@ -71,22 +71,64 @@ func TestMain(m *testing.M) {
 }
 
 func TestLogin(t *testing.T) {
-	want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
-	token := &JWTtoken{}
-	accountService.CreateAccount(want)
+	t.Run("Should Raise if account does not exist", func(t *testing.T) {
+		response := &ErrorResponse{}
 
-	r := SetupRouter()
-	r.GET("/account/login", accountController.Login)
+		r := SetupRouter()
+		r.GET("/account/login", accountController.Login)
 
-	login := &services.Login{Email: "test@example.com", Password: "password"}
-	jsonValue, _ := json.Marshal(login)
-	req, _ := http.NewRequest("GET", "/account/login", bytes.NewBuffer(jsonValue))
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+		login := &services.Login{Email: "test@example.com", Password: "password"}
+		jsonValue, _ := json.Marshal(login)
+		req, _ := http.NewRequest("GET", "/account/login", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
 
-	json.Unmarshal(w.Body.Bytes(), token)
-	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, 3, len(strings.Split(token.Token, ".")))
+		json.Unmarshal(w.Body.Bytes(), response)
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, "mongo: no documents in result", response.Errors)
+	})
+
+	t.Run("Should create a token", func(t *testing.T) {
+		want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
+		token := &JWTtoken{}
+		accountService.CreateAccount(want)
+
+		r := SetupRouter()
+		r.GET("/account/login", accountController.Login)
+
+		login := &services.Login{Email: "test@example.com", Password: "password"}
+		jsonValue, _ := json.Marshal(login)
+		req, _ := http.NewRequest("GET", "/account/login", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		json.Unmarshal(w.Body.Bytes(), token)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, 3, len(strings.Split(token.Token, ".")))
+	})
+
+	t.Run("Should validate a request", func(t *testing.T) {
+		login := &services.Login{Email: "test@example.com"}
+		type Response struct {
+			Errors []ErrorMsg `json:"errors"`
+		}
+
+		response := &Response{}
+
+		r := SetupRouter()
+		r.GET("/account/login", accountController.Login)
+
+		jsonValue, _ := json.Marshal(login)
+		req, _ := http.NewRequest("GET", "/account/login", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		json.Unmarshal(w.Body.Bytes(), &response)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, response.Errors[0].Field, "Password")
+		assert.Equal(t, response.Errors[0].Message, "This field is required")
+	})
+
 }
 
 func TestCreate(t *testing.T) {
