@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/croisade/chimichanga/pkg/models"
 	"github.com/croisade/chimichanga/pkg/services"
@@ -75,11 +77,11 @@ func TestLogin(t *testing.T) {
 		response := &ErrorResponse{}
 
 		r := SetupRouter()
-		r.GET("/account/login", accountController.Login)
+		r.PUT("/account/login", accountController.Login)
 
 		login := &services.Login{Email: "test@example.com", Password: "password"}
 		jsonValue, _ := json.Marshal(login)
-		req, _ := http.NewRequest("GET", "/account/login", bytes.NewBuffer(jsonValue))
+		req, _ := http.NewRequest("PUT", "/account/login", bytes.NewBuffer(jsonValue))
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -94,11 +96,11 @@ func TestLogin(t *testing.T) {
 		accountService.CreateAccount(want)
 
 		r := SetupRouter()
-		r.GET("/account/login", accountController.Login)
+		r.PUT("/account/login", accountController.Login)
 
 		login := &services.Login{Email: "test@example.com", Password: "password"}
 		jsonValue, _ := json.Marshal(login)
-		req, _ := http.NewRequest("GET", "/account/login", bytes.NewBuffer(jsonValue))
+		req, _ := http.NewRequest("PUT", "/account/login", bytes.NewBuffer(jsonValue))
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -116,10 +118,10 @@ func TestLogin(t *testing.T) {
 		response := &Response{}
 
 		r := SetupRouter()
-		r.GET("/account/login", accountController.Login)
+		r.PUT("/account/login", accountController.Login)
 
 		jsonValue, _ := json.Marshal(login)
-		req, _ := http.NewRequest("GET", "/account/login", bytes.NewBuffer(jsonValue))
+		req, _ := http.NewRequest("PUT", "/account/login", bytes.NewBuffer(jsonValue))
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -136,10 +138,10 @@ func TestCreate(t *testing.T) {
 		account := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 		response := &models.Account{}
 		r := SetupRouter()
-		r.GET("/account/create", accountController.CreateAccount)
+		r.POST("/account/create", accountController.CreateAccount)
 
 		jsonValue, _ := json.Marshal(account)
-		req, _ := http.NewRequest("GET", "/account/create", bytes.NewBuffer(jsonValue))
+		req, _ := http.NewRequest("POST", "/account/create", bytes.NewBuffer(jsonValue))
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -157,10 +159,10 @@ func TestCreate(t *testing.T) {
 		response := &Response{}
 
 		r := SetupRouter()
-		r.GET("/account/create", accountController.CreateAccount)
+		r.POST("/account/create", accountController.CreateAccount)
 
 		jsonValue, _ := json.Marshal(account)
-		req, _ := http.NewRequest("GET", "/account/create", bytes.NewBuffer(jsonValue))
+		req, _ := http.NewRequest("POST", "/account/create", bytes.NewBuffer(jsonValue))
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 
@@ -170,3 +172,44 @@ func TestCreate(t *testing.T) {
 		assert.Equal(t, response.Errors[0].Message, "This field is required")
 	})
 }
+
+func TestToken(t *testing.T) {
+	t.Run("Should refresh a token", func(t *testing.T) {
+		var refreshToken JWTtoken
+		var response *JWTtoken
+		token, _ := accountController.JWTService.CreateToken()
+		fmt.Println(token)
+
+		refreshToken.RefreshToken = token
+
+		time.Sleep(1 * time.Second)
+
+		r := SetupRouter()
+		r.PUT("/account/token", accountController.Token)
+
+		jsonValue, _ := json.Marshal(refreshToken)
+		req, _ := http.NewRequest("PUT", "/account/token", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		json.Unmarshal(w.Body.Bytes(), &response)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.NotEqual(t, response.Token, token)
+	})
+
+	t.Run("Should raise if a token is missing", func(t *testing.T) {
+		response := &ErrorResponse{}
+
+		r := SetupRouter()
+		r.PUT("/account/token", accountController.Token)
+
+		req, _ := http.NewRequest("PUT", "/account/token", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		json.Unmarshal(w.Body.Bytes(), &response)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, response.Errors, "invalid request")
+	})
+}
+func TestLogout(t *testing.T) {}
