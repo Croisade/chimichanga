@@ -24,11 +24,7 @@ type JWTtoken struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-type LogoutValidation struct {
-	AccountId string `json:"accountId" binding:"required"`
-}
-
-type ErrorMsg struct {
+type ErrorValidationMsg struct {
 	Field   string `json:"field"`
 	Message string `json:"message"`
 }
@@ -60,9 +56,9 @@ func (ac *AccountController) handleValidationError(ctx *gin.Context, err error) 
 	var ve validator.ValidationErrors
 	if errors.As(err, &ve) {
 
-		out := make([]ErrorMsg, len(ve))
+		out := make([]ErrorValidationMsg, len(ve))
 		for i, fe := range ve {
-			out[i] = ErrorMsg{fe.Field(), ac.getErrorMsg(fe)}
+			out[i] = ErrorValidationMsg{fe.Field(), ac.getErrorMsg(fe)}
 		}
 		ctx.JSON(http.StatusBadRequest, gin.H{"errors": out})
 		return
@@ -138,14 +134,14 @@ func (ac *AccountController) UpdateAccount(ctx *gin.Context) {
 }
 
 func (ac *AccountController) Login(ctx *gin.Context) {
-	var login *services.Login
+	var login *services.LoginValidation
 
 	if err := ctx.ShouldBindJSON(&login); err != nil {
 		ac.handleValidationError(ctx, err)
 		return
 	}
 
-	_, err := ac.AccountService.Login(login)
+	account, err := ac.AccountService.Login(login)
 
 	if err != nil {
 		ctx.JSON(http.StatusNotFound, gin.H{"errors": err.Error()})
@@ -158,13 +154,21 @@ func (ac *AccountController) Login(ctx *gin.Context) {
 		return
 	}
 
-	refreshTokens, err := ac.JWTService.CreateRefreshToken()
+	refreshToken, err := ac.JWTService.CreateRefreshToken()
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
 	}
 
-	result := JWTtoken{Token: token, RefreshToken: refreshTokens}
+	account.RefreshToken = refreshToken
+	ac.AccountService.UpdateAccount(account)
+
+	if err != nil {
+		ctx.JSON(http.StatusNotFound, gin.H{"errors": err.Error()})
+		return
+	}
+
+	result := JWTtoken{Token: token, RefreshToken: refreshToken}
 	ctx.JSON(http.StatusOK, result)
 	return
 }
@@ -195,17 +199,37 @@ func (ac *AccountController) Token(ctx *gin.Context) {
 		return
 	}
 
+	account, err := ac.AccountService.FindByRefreshToken(refreshToken.RefreshToken)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	err = ac.AccountService.UpdateAccount(account)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
 	result := JWTtoken{Token: token, RefreshToken: refreshTokens}
+
 	ctx.JSON(http.StatusOK, result)
 	return
 }
 func (ac *AccountController) Logout(ctx *gin.Context) {
-	var logoutValidation *LogoutValidation
+	var logoutValidation *services.LogoutValidation
 	if err := ctx.ShouldBindJSON(&logoutValidation); err != nil {
 		ac.handleValidationError(ctx, err)
 		return
 	}
 
+	err := ac.AccountService.Logout(logoutValidation)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, nil)
 }
 
 func (ac *AccountController) RegisterAccountRoutes(rg *gin.RouterGroup) {

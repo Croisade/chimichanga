@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/croisade/chimichanga/pkg/models"
@@ -28,7 +27,6 @@ func TestAccountService(t *testing.T) {
 
 	t.Run("get Account", func(t *testing.T) {
 		var got *models.Account
-		fmt.Println(want)
 		got, err := accountService.GetAccount(want.AccountId)
 
 		assert.Nil(t, err)

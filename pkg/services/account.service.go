@@ -14,9 +14,11 @@ type AccountService interface {
 	CreateAccount(*models.Account) (*models.Account, error)
 	GetAccount(string) (*models.Account, error)
 	GetAccounts() ([]*models.Account, error)
+	FindByRefreshToken(string) (*models.Account, error)
 	DeleteAccount(string) error
 	UpdateAccount(*models.Account) error
-	Login(*Login) (*models.Account, error)
+	Login(*LoginValidation) (*models.Account, error)
+	Logout(*LogoutValidation) error
 }
 
 type AccountServiceImpl struct {
@@ -24,9 +26,13 @@ type AccountServiceImpl struct {
 	ctx               context.Context
 }
 
-type Login struct {
+type LoginValidation struct {
 	Email    string `json:"email" bson:"email" binding:"required"`
 	Password string `json:"password" bson:"password" binding:"required"`
+}
+
+type LogoutValidation struct {
+	AccountId string `json:"accountId" binding:"required"`
 }
 
 func NewAccountServiceImpl(accountcollection *mongo.Collection, ctx context.Context) *AccountServiceImpl {
@@ -106,6 +112,9 @@ func (s *AccountServiceImpl) UpdateAccount(account *models.Account) error {
 	if account.LastName != "" {
 		existingAccount.LastName = account.LastName
 	}
+	if account.RefreshToken != "" {
+		existingAccount.RefreshToken = account.RefreshToken
+	}
 
 	existingAccount.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 
@@ -118,7 +127,17 @@ func (s *AccountServiceImpl) UpdateAccount(account *models.Account) error {
 	return nil
 }
 
-func (s *AccountServiceImpl) Login(login *Login) (*models.Account, error) {
+func (s *AccountServiceImpl) FindByRefreshToken(refreshToken string) (*models.Account, error) {
+	var result *models.Account
+	var err error
+
+	filter := bson.M{"refreshToken": refreshToken}
+	err = s.accountcollection.FindOne(s.ctx, filter).Decode(&result)
+
+	return result, err
+}
+
+func (s *AccountServiceImpl) Login(login *LoginValidation) (*models.Account, error) {
 	var result *models.Account
 	var err error
 
@@ -126,4 +145,11 @@ func (s *AccountServiceImpl) Login(login *Login) (*models.Account, error) {
 	err = s.accountcollection.FindOne(s.ctx, filter).Decode(&result)
 
 	return result, err
+}
+
+func (s *AccountServiceImpl) Logout(login *LogoutValidation) error {
+	account := &models.Account{AccountId: login.AccountId, RefreshToken: "loggedOut"}
+	err := s.UpdateAccount(account)
+
+	return err
 }

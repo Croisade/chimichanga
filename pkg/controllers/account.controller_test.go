@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -72,65 +71,8 @@ func TestMain(m *testing.M) {
 	// teardown()
 }
 
-func TestLogin(t *testing.T) {
-	t.Run("Should Raise if account does not exist", func(t *testing.T) {
-		response := &ErrorResponse{}
-
-		r := SetupRouter()
-		r.PUT("/account/login", accountController.Login)
-
-		login := &services.Login{Email: "test@example.com", Password: "password"}
-		jsonValue, _ := json.Marshal(login)
-		req, _ := http.NewRequest("PUT", "/account/login", bytes.NewBuffer(jsonValue))
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-
-		json.Unmarshal(w.Body.Bytes(), response)
-		assert.Equal(t, http.StatusNotFound, w.Code)
-		assert.Equal(t, "mongo: no documents in result", response.Errors)
-	})
-
-	t.Run("Should create a token", func(t *testing.T) {
-		want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
-		token := &JWTtoken{}
-		accountService.CreateAccount(want)
-
-		r := SetupRouter()
-		r.PUT("/account/login", accountController.Login)
-
-		login := &services.Login{Email: "test@example.com", Password: "password"}
-		jsonValue, _ := json.Marshal(login)
-		req, _ := http.NewRequest("PUT", "/account/login", bytes.NewBuffer(jsonValue))
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-
-		json.Unmarshal(w.Body.Bytes(), token)
-		assert.Equal(t, http.StatusOK, w.Code)
-		assert.Equal(t, 3, len(strings.Split(token.Token, ".")))
-	})
-
-	t.Run("Should validate a request", func(t *testing.T) {
-		login := &services.Login{Email: "test@example.com"}
-		type Response struct {
-			Errors []ErrorMsg `json:"errors"`
-		}
-
-		response := &Response{}
-
-		r := SetupRouter()
-		r.PUT("/account/login", accountController.Login)
-
-		jsonValue, _ := json.Marshal(login)
-		req, _ := http.NewRequest("PUT", "/account/login", bytes.NewBuffer(jsonValue))
-		w := httptest.NewRecorder()
-		r.ServeHTTP(w, req)
-
-		json.Unmarshal(w.Body.Bytes(), &response)
-		assert.Equal(t, http.StatusBadRequest, w.Code)
-		assert.Equal(t, response.Errors[0].Field, "Password")
-		assert.Equal(t, response.Errors[0].Message, "This field is required")
-	})
-
+type Response struct {
+	Errors []ErrorValidationMsg `json:"errors"`
 }
 
 func TestCreate(t *testing.T) {
@@ -152,10 +94,6 @@ func TestCreate(t *testing.T) {
 
 	t.Run("Should raise if a required field is missing", func(t *testing.T) {
 		account := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first"}
-		type Response struct {
-			Errors []ErrorMsg `json:"errors"`
-		}
-
 		response := &Response{}
 
 		r := SetupRouter()
@@ -173,13 +111,72 @@ func TestCreate(t *testing.T) {
 	})
 }
 
+func TestLogin(t *testing.T) {
+	t.Run("Should Raise if account does not exist", func(t *testing.T) {
+		accountCollection.DeleteMany(ctx, bson.D{{}})
+		response := &ErrorResponse{}
+
+		r := SetupRouter()
+		r.PUT("/account/login", accountController.Login)
+
+		login := &services.LoginValidation{Email: "test@example.com", Password: "password"}
+		jsonValue, _ := json.Marshal(login)
+		req, _ := http.NewRequest("PUT", "/account/login", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		json.Unmarshal(w.Body.Bytes(), response)
+		assert.Equal(t, http.StatusNotFound, w.Code)
+		assert.Equal(t, "mongo: no documents in result", response.Errors)
+	})
+
+	t.Run("Should create a token", func(t *testing.T) {
+		want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
+		accountService.CreateAccount(want)
+		token := &JWTtoken{}
+
+		r := SetupRouter()
+		r.PUT("/account/login", accountController.Login)
+
+		login := &services.LoginValidation{Email: "test@example.com", Password: "password"}
+		jsonValue, _ := json.Marshal(login)
+		req, _ := http.NewRequest("PUT", "/account/login", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		json.Unmarshal(w.Body.Bytes(), token)
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Equal(t, 3, len(strings.Split(token.Token, ".")))
+	})
+
+	t.Run("Should validate a request", func(t *testing.T) {
+		login := &services.LoginValidation{Email: "test@example.com"}
+
+		response := &Response{}
+
+		r := SetupRouter()
+		r.PUT("/account/login", accountController.Login)
+
+		jsonValue, _ := json.Marshal(login)
+		req, _ := http.NewRequest("PUT", "/account/login", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		json.Unmarshal(w.Body.Bytes(), &response)
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Equal(t, response.Errors[0].Field, "Password")
+		assert.Equal(t, response.Errors[0].Message, "This field is required")
+	})
+}
+
 func TestToken(t *testing.T) {
 	t.Run("Should refresh a token", func(t *testing.T) {
 		var refreshToken JWTtoken
 		var response *JWTtoken
 		token, _ := accountController.JWTService.CreateToken()
-		fmt.Println(token)
 
+		want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last", RefreshToken: token}
+		accountService.CreateAccount(want)
 		refreshToken.RefreshToken = token
 
 		time.Sleep(1 * time.Second)
@@ -212,4 +209,25 @@ func TestToken(t *testing.T) {
 		assert.Equal(t, response.Errors, "invalid request")
 	})
 }
-func TestLogout(t *testing.T) {}
+func TestLogout(t *testing.T) {
+	t.Run("Should logout and remove token from account document", func(t *testing.T) {
+		want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
+		accountService.CreateAccount(want)
+		accounts, _ := accountService.GetAccounts()
+		var logout = &services.LogoutValidation{AccountId: accounts[0].AccountId}
+
+		// token, _ := accountController.JWTService.CreateToken()
+
+		// accountCollection.FindOne(ctx, {})
+
+		r := SetupRouter()
+		r.PUT("/account/logout", accountController.Logout)
+
+		jsonValue, _ := json.Marshal(logout)
+		req, _ := http.NewRequest("PUT", "/account/logout", bytes.NewBuffer(jsonValue))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+	})
+}
