@@ -20,6 +20,8 @@ var (
 	mongoClient *mongo.Client
 	err         error
 
+	jwtservice services.JWTService
+
 	accountService    services.AccountService
 	accountController controllers.AccountController
 	accountCollection *mongo.Collection
@@ -55,11 +57,13 @@ func init() {
 	accountCollection = mongoClient.Database("CorroYouRun").Collection("accounts")
 	usercollection = mongoClient.Database("CorroYouRun").Collection("runs")
 
+	jwtService := services.NewJWTAuthService()
+
 	userservice = services.NewUserService(usercollection, ctx)
 	usercontroller = controllers.New(userservice)
 
 	accountService = services.NewAccountServiceImpl(accountCollection, ctx)
-	accountController = controllers.NewAccountController(accountService)
+	accountController = controllers.NewAccountController(accountService, jwtService)
 
 	server = gin.Default()
 }
