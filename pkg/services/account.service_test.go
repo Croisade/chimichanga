@@ -14,6 +14,22 @@ func TestAccountService(t *testing.T) {
 	accountService := NewAccountServiceImpl(accountCollection, ctx)
 	want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
+	t.Run("get Accounts", func(t *testing.T) {
+		accountCollection.DeleteMany(ctx, bson.D{{}})
+		_, err := accountService.CreateAccount(want)
+		var got []*models.Account
+		newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
+
+		accountService.CreateAccount(newAcc)
+		got, err = accountService.GetAccounts()
+		// tmp, _ := json.Marshal(got)
+		man, _ := json.MarshalIndent(got, "", "    ")
+		fmt.Println(string(man))
+		// json.Marshal(got)
+		assert.Nil(t, err)
+		assert.Equal(t, 5, len(got))
+	})
+
 	t.Run("create Account", func(t *testing.T) {
 		accountCollection.DeleteMany(ctx, bson.D{{}})
 		var got *models.Account
@@ -43,22 +59,6 @@ func TestAccountService(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Contains(t, got.AccountId, want.AccountId)
-	})
-
-	t.Run("get Accounts", func(t *testing.T) {
-		accountCollection.DeleteMany(ctx, bson.D{{}})
-		_, err := accountService.CreateAccount(want)
-		var got []*models.Account
-		newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
-
-		accountService.CreateAccount(newAcc)
-		got, err = accountService.GetAccounts()
-		// tmp, _ := json.Marshal(got)
-		man, _ := json.MarshalIndent(got, "", "    ")
-		fmt.Println(string(man))
-		// json.Marshal(got)
-		assert.Nil(t, err)
-		assert.Equal(t, 5, len(got))
 	})
 
 	t.Run("Update Account", func(t *testing.T) {
