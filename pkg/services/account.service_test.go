@@ -1,6 +1,8 @@
 package services
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/croisade/chimichanga/pkg/models"
@@ -51,9 +53,12 @@ func TestAccountService(t *testing.T) {
 
 		accountService.CreateAccount(newAcc)
 		got, err = accountService.GetAccounts()
-
+		// tmp, _ := json.Marshal(got)
+		man, _ := json.MarshalIndent(got, "", "    ")
+		fmt.Println(string(man))
+		// json.Marshal(got)
 		assert.Nil(t, err)
-		assert.NotNil(t, got)
+		assert.Equal(t, 5, len(got))
 	})
 
 	t.Run("Update Account", func(t *testing.T) {
