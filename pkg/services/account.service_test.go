@@ -48,8 +48,7 @@ func TestAccountService(t *testing.T) {
 	t.Run("Update Account", func(t *testing.T) {
 		input := &models.Account{AccountId: want.AccountId, FirstName: "Middle"}
 
-		accountService.UpdateAccount(input)
-		got, err := accountService.GetAccount(want.AccountId)
+		got, err := accountService.UpdateAccount(input)
 
 		assert.Nil(t, err)
 		assert.NotEqual(t, want.FirstName, got.FirstName)
