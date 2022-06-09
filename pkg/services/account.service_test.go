@@ -23,14 +23,15 @@ func TestAccountService(t *testing.T) {
 	want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
 	t.Run("get Accounts", func(t *testing.T) {
-		go accountCollection.DeleteMany(ctx, bson.D{{}})
+		accountCollection.DeleteMany(ctx, bson.D{{}})
 		var got []*models.Account
 
 		firstAcc := &models.Account{Email: "test3@example.com", Password: "password", FirstName: "first", LastName: "last"}
 		newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
-
-		go f(accountService, []*models.Account{firstAcc, newAcc})
-		time.Sleep(time.Millisecond * 30000)
+		accountService.CreateAccount(firstAcc)
+		accountService.CreateAccount(newAcc)
+		// go f(accountService, []*models.Account{firstAcc, newAcc})
+		time.Sleep(time.Second * 3)
 		got, err := accountService.GetAccounts()
 		man, _ := json.MarshalIndent(got, "", "    ")
 		fmt.Println(string(man))
