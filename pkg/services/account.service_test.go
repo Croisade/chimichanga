@@ -9,14 +9,15 @@ import (
 )
 
 func TestAccountService(t *testing.T) {
-	accountService := NewAccountServiceImpl(accountsCollection, ctx)
+	accountService := NewAccountServiceImpl(accountCollection, ctx)
 	want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
 	t.Run("create Account", func(t *testing.T) {
+		accountCollection.DeleteMany(ctx, bson.D{{}})
 		var got *models.Account
 		accountService.CreateAccount(want)
 
-		err := accountsCollection.FindOne(ctx, bson.M{"firstName": "first"}).Decode(&got)
+		err := accountCollection.FindOne(ctx, bson.M{"firstName": "first"}).Decode(&got)
 
 		want.AccountId = got.AccountId
 
@@ -25,25 +26,31 @@ func TestAccountService(t *testing.T) {
 	})
 
 	t.Run("Should error out if account already exists", func(t *testing.T) {
+		accountCollection.DeleteMany(ctx, bson.D{{}})
+		accountService.CreateAccount(want)
 		_, err := accountService.CreateAccount(want)
 
 		assert.NotNil(t, err)
 	})
 
 	t.Run("get Account", func(t *testing.T) {
+		accountCollection.DeleteMany(ctx, bson.D{{}})
+		_, err := accountService.CreateAccount(want)
 		var got *models.Account
-		got, err := accountService.GetAccount(want.AccountId)
+		got, err = accountService.GetAccount(want.AccountId)
 
 		assert.Nil(t, err)
 		assert.Contains(t, got.AccountId, want.AccountId)
 	})
 
 	t.Run("get Accounts", func(t *testing.T) {
+		accountCollection.DeleteMany(ctx, bson.D{{}})
+		_, err := accountService.CreateAccount(want)
 		var got []*models.Account
 		want := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
 		accountService.CreateAccount(want)
-		got, err := accountService.GetAccounts()
+		got, err = accountService.GetAccounts()
 
 		assert.Nil(t, err)
 		assert.Equal(t, 2, len(got))
@@ -51,6 +58,8 @@ func TestAccountService(t *testing.T) {
 	})
 
 	t.Run("Update Account", func(t *testing.T) {
+		accountCollection.DeleteMany(ctx, bson.D{{}})
+		_, err := accountService.CreateAccount(want)
 		input := &models.Account{AccountId: want.AccountId, FirstName: "Middle"}
 
 		got, err := accountService.UpdateAccount(input)
