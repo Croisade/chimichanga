@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/croisade/chimichanga/pkg/models"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +23,9 @@ func TestAccountService(t *testing.T) {
 		newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
 		accountService.CreateAccount(firstAcc)
+		time.Sleep(time.Second * 1)
 		accountService.CreateAccount(newAcc)
+		time.Sleep(time.Second * 1)
 		got, err := accountService.GetAccounts()
 		// tmp, _ := json.Marshal(got)
 		man, _ := json.MarshalIndent(got, "", "    ")
