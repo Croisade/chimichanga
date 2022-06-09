@@ -14,7 +14,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var accountsCollection *mongo.Collection
+var accountCollection *mongo.Collection
 var runsCollection *mongo.Collection
 var ctx context.Context
 
@@ -25,10 +25,10 @@ func setup() {
 		log.Fatalf("Error: %v", err)
 	}
 
-	accountsCollection = c.Database("CorroYouRun").Collection("accounts")
+	accountCollection = c.Database("CorroYouRun").Collection("accounts")
 	runsCollection = c.Database("CorroYouRun").Collection("runs")
 	_, delErr := runsCollection.DeleteMany(ctx, bson.D{{}})
-	_, accDelErr := accountsCollection.DeleteMany(ctx, bson.D{{}})
+	_, accDelErr := accountCollection.DeleteMany(ctx, bson.D{{}})
 
 	if delErr != nil {
 		log.Fatalf("Error: %v", delErr)

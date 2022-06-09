@@ -12,9 +12,9 @@ type UserController struct {
 	UserService services.UserService
 }
 
-func New(userservice services.UserService) UserController {
+func New(userService services.UserService) UserController {
 	return UserController{
-		UserService: userservice,
+		UserService: userService,
 	}
 }
 
@@ -84,10 +84,10 @@ func (uc *UserController) DeleteUser(ctx *gin.Context) {
 }
 
 func (uc *UserController) RegisterUserRoutes(rg *gin.RouterGroup) {
-	userroute := rg.Group("/user")
-	userroute.POST("/create", uc.CreateUser)
-	userroute.GET("/get/:name", uc.GetAll)
-	userroute.GET("/getall", uc.GetAll)
-	userroute.DELETE("/delete/:userId", uc.DeleteUser)
-	userroute.PUT("/update", uc.UpdateUser)
+	userRoute := rg.Group("/user")
+	userRoute.POST("/create", uc.CreateUser)
+	userRoute.GET("/get/:name", uc.GetAll)
+	userRoute.GET("/getall", uc.GetAll)
+	userRoute.DELETE("/delete/:userId", uc.DeleteUser)
+	userRoute.PUT("/update", uc.UpdateUser)
 }
