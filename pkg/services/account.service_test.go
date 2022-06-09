@@ -47,9 +47,9 @@ func TestAccountService(t *testing.T) {
 		accountCollection.DeleteMany(ctx, bson.D{{}})
 		_, err := accountService.CreateAccount(want)
 		var got []*models.Account
-		want := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
+		newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
-		accountService.CreateAccount(want)
+		accountService.CreateAccount(newAcc)
 		got, err = accountService.GetAccounts()
 
 		assert.Nil(t, err)
