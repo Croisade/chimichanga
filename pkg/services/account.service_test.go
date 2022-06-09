@@ -11,26 +11,30 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+func f(f *AccountServiceImpl, list []*models.Account) {
+	for i := 0; i < 2; i++ {
+		fmt.Println(i)
+		f.CreateAccount(list[i])
+	}
+}
+
 func TestAccountService(t *testing.T) {
 	accountService := NewAccountServiceImpl(accountCollection, ctx)
 	want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
 	t.Run("get Accounts", func(t *testing.T) {
-		accountCollection.DeleteMany(ctx, bson.D{{}})
+		go accountCollection.DeleteMany(ctx, bson.D{{}})
 		var got []*models.Account
 
 		firstAcc := &models.Account{Email: "test3@example.com", Password: "password", FirstName: "first", LastName: "last"}
 		newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
-		accountService.CreateAccount(firstAcc)
-		time.Sleep(time.Second * 1)
-		accountService.CreateAccount(newAcc)
-		time.Sleep(time.Second * 1)
+		go f(accountService, []*models.Account{firstAcc, newAcc})
+		time.Sleep(time.Millisecond * 30000)
 		got, err := accountService.GetAccounts()
-		// tmp, _ := json.Marshal(got)
 		man, _ := json.MarshalIndent(got, "", "    ")
 		fmt.Println(string(man))
-		// json.Marshal(got)
+
 		assert.Nil(t, err)
 		assert.Equal(t, 2, len(got))
 	})
