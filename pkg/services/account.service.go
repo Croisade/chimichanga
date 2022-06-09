@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type AccountService interface {
@@ -16,7 +17,7 @@ type AccountService interface {
 	GetAccounts() ([]*models.Account, error)
 	FindByRefreshToken(string) (*models.Account, error)
 	DeleteAccount(string) error
-	UpdateAccount(*models.Account) error
+	UpdateAccount(*models.Account) (*models.Account, error)
 	Login(*LoginValidation) (*models.Account, error)
 	Logout(*LogoutValidation) error
 }
@@ -90,14 +91,15 @@ func (s *AccountServiceImpl) DeleteAccount(accountId string) error {
 	return err
 }
 
-func (s *AccountServiceImpl) UpdateAccount(account *models.Account) error {
+func (s *AccountServiceImpl) UpdateAccount(account *models.Account) (*models.Account, error) {
 	filter := bson.M{"accountId": account.AccountId}
 	var err error
+	var result *models.Account
 
 	existingAccount, err := s.GetAccount(account.AccountId)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if account.Email != "" {
@@ -118,13 +120,23 @@ func (s *AccountServiceImpl) UpdateAccount(account *models.Account) error {
 
 	existingAccount.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 
-	_, err = s.accountcollection.UpdateOne(s.ctx, filter, bson.M{"$set": existingAccount})
+	// updatedAccount, err := s.accountcollection.UpdateOne(s.ctx, filter, bson.M{"$set": existingAccount})
 
-	if err != nil {
-		return err
+	upsert := false
+	after := options.After
+	opt := options.FindOneAndUpdateOptions{
+		ReturnDocument: &after,
+		Upsert:         &upsert,
 	}
 
-	return nil
+	updatedAccount := s.accountcollection.FindOneAndUpdate(s.ctx, filter, bson.M{"$set": existingAccount}, &opt)
+	if updatedAccount.Err() != nil {
+		return nil, updatedAccount.Err()
+	}
+
+	decodeErr := updatedAccount.Decode(&result)
+
+	return result, decodeErr
 }
 
 func (s *AccountServiceImpl) FindByRefreshToken(refreshToken string) (*models.Account, error) {
@@ -149,7 +161,7 @@ func (s *AccountServiceImpl) Login(login *LoginValidation) (*models.Account, err
 
 func (s *AccountServiceImpl) Logout(login *LogoutValidation) error {
 	account := &models.Account{AccountId: login.AccountId, RefreshToken: "loggedOut"}
-	err := s.UpdateAccount(account)
+	_, err := s.UpdateAccount(account)
 
 	return err
 }

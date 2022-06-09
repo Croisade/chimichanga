@@ -33,6 +33,14 @@ type ErrorResponse struct {
 	Errors string `json:"errors"`
 }
 
+type UpdateAccountRequest struct {
+	AccountId string `json:"accountId" bson:"accountId"`
+	Email     string `json:"email" bson:"email"`
+	Password  string `json:"password" bson:"password"`
+	FirstName string `json:"firstName" bson:"firstName"`
+	LastName  string `json:"lastName" bson:"lastName"`
+}
+
 func NewAccountController(accountService services.AccountService, jwtService services.JWTAuthService) AccountController {
 	return AccountController{
 		AccountService: accountService,
@@ -83,7 +91,7 @@ func (ac *AccountController) CreateAccount(ctx *gin.Context) {
 }
 
 func (ac *AccountController) GetAccount(ctx *gin.Context) {
-	accountId := ctx.Param("AccountId")
+	accountId := ctx.Param("accountId")
 	result, err := ac.AccountService.GetAccount(accountId)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"errors": err.Error()})
@@ -107,7 +115,7 @@ func (ac *AccountController) GetAccounts(ctx *gin.Context) {
 }
 
 func (ac *AccountController) DeleteAccount(ctx *gin.Context) {
-	accountId := ctx.Param("AccountId")
+	accountId := ctx.Param("accountId")
 	err := ac.AccountService.DeleteAccount(accountId)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"errors": err.Error()})
@@ -118,13 +126,19 @@ func (ac *AccountController) DeleteAccount(ctx *gin.Context) {
 }
 
 func (ac *AccountController) UpdateAccount(ctx *gin.Context) {
-	var account models.Account
+	var account *UpdateAccountRequest
+	var accountToBeUpdated models.Account
 	if err := ctx.ShouldBindJSON(&account); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
 		return
 	}
+	accountToBeUpdated.AccountId = account.AccountId
+	accountToBeUpdated.Email = account.Email
+	accountToBeUpdated.FirstName = account.FirstName
+	accountToBeUpdated.LastName = account.LastName
+	accountToBeUpdated.Password = account.Password
 
-	result, err := ac.AccountService.CreateAccount(&account)
+	result, err := ac.AccountService.UpdateAccount(&accountToBeUpdated)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"errors": err.Error()})
 		return
@@ -205,7 +219,7 @@ func (ac *AccountController) Token(ctx *gin.Context) {
 		return
 	}
 
-	err = ac.AccountService.UpdateAccount(account)
+	_, err = ac.AccountService.UpdateAccount(account)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"errors": err.Error()})
 		return
