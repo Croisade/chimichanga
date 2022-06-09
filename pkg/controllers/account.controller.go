@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/croisade/chimichanga/pkg/middleware"
 	"github.com/croisade/chimichanga/pkg/models"
 	"github.com/croisade/chimichanga/pkg/services"
 	"github.com/gin-gonic/gin"
@@ -247,13 +248,15 @@ func (ac *AccountController) Logout(ctx *gin.Context) {
 }
 
 func (ac *AccountController) RegisterAccountRoutes(rg *gin.RouterGroup) {
-	accountRoute := rg.Group("/account")
-	accountRoute.POST("/create", ac.CreateAccount)
-	accountRoute.GET("/get/:accountId", ac.GetAccount)
-	accountRoute.GET("/fetch", ac.GetAccounts)
-	accountRoute.DELETE("/delete/:accountId", ac.DeleteAccount)
-	accountRoute.PUT("/update", ac.UpdateAccount)
-	accountRoute.PUT("/login", ac.Login)
-	accountRoute.PUT("/token", ac.Token)
-	accountRoute.PUT("/logout", ac.Logout)
+	accountRouteNoMw := rg.Group("/account")
+	accountRouteNoMw.POST("/create", ac.CreateAccount)
+	accountRouteNoMw.PUT("/login", ac.Login)
+	accountRouteUser := rg.Group("/account", middleware.AuthorizeUserJWT())
+	accountRouteUser.GET("/get/:accountId", ac.GetAccount)
+	accountRouteUser.DELETE("/delete/:accountId", ac.DeleteAccount)
+	accountRouteUser.PUT("/update", ac.UpdateAccount)
+	accountRouteUser.PUT("/token", ac.Token)
+	accountRouteUser.PUT("/logout", ac.Logout)
+	accountRouteAdmin := rg.Group("/account", middleware.AuthorizeAdminJWT())
+	accountRouteAdmin.GET("/fetch", ac.GetAccounts)
 }

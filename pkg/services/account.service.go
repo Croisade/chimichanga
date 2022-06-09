@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/croisade/chimichanga/pkg/models"
@@ -9,6 +11,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AccountService interface {
@@ -46,18 +49,28 @@ func NewAccountServiceImpl(accountcollection *mongo.Collection, ctx context.Cont
 func (s *AccountServiceImpl) CreateAccount(account *models.Account) (*models.Account, error) {
 	var result *models.Account
 
+	insertFilter := bson.M{"email": account.Email}
+	err := s.accountcollection.FindOne(s.ctx, insertFilter).Decode(&result)
+	if err == nil {
+		return nil, errors.New("account already exists")
+	}
+
+	hashedPassword, err := s.HashPassword(account.Password)
+	if err != nil {
+		return nil, err
+	}
+	account.Password = hashedPassword
 	account.AccountId = primitive.NewObjectID().Hex()
 	account.CreatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 	account.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 
-	filter := bson.M{"accountId": account.AccountId}
-
-	_, err := s.accountcollection.InsertOne(s.ctx, account)
+	_, err = s.accountcollection.InsertOne(s.ctx, account)
 
 	if err != nil {
 		return nil, err
 	}
 
+	filter := bson.M{"accountId": account.AccountId}
 	err = s.accountcollection.FindOne(s.ctx, filter).Decode(&result)
 	return account, err
 }
@@ -102,9 +115,10 @@ func (s *AccountServiceImpl) UpdateAccount(account *models.Account) (*models.Acc
 		return nil, err
 	}
 
-	if account.Email != "" {
-		existingAccount.Email = account.Email
-	}
+	// ? Can users update their email
+	// if account.Email != "" {
+	// 	existingAccount.Email = account.Email
+	// }
 	if account.Password != "" {
 		existingAccount.Password = account.Password
 	}
@@ -153,8 +167,24 @@ func (s *AccountServiceImpl) Login(login *LoginValidation) (*models.Account, err
 	var result *models.Account
 	var err error
 
-	filter := bson.M{"email": login.Email, "password": login.Password}
+	hashedPassword, err := s.HashPassword(login.Password)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println(hashedPassword)
+
+	filter := bson.M{"email": login.Email}
 	err = s.accountcollection.FindOne(s.ctx, filter).Decode(&result)
+
+	if err != nil {
+		return nil, err
+	}
+
+	isValid := s.CheckPasswordHash(login.Password, result.Password)
+
+	if isValid != true {
+		return nil, errors.New("Invalid password")
+	}
 
 	return result, err
 }
@@ -164,4 +194,14 @@ func (s *AccountServiceImpl) Logout(login *LogoutValidation) error {
 	_, err := s.UpdateAccount(account)
 
 	return err
+}
+
+func (s *AccountServiceImpl) HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+func (s *AccountServiceImpl) CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }

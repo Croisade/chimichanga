@@ -22,7 +22,12 @@ func TestAccountService(t *testing.T) {
 
 		assert.Nil(t, err)
 		assert.Equal(t, want, got)
+	})
 
+	t.Run("Should error out if account already exists", func(t *testing.T) {
+		_, err := accountService.CreateAccount(want)
+
+		assert.NotNil(t, err)
 	})
 
 	t.Run("get Account", func(t *testing.T) {
@@ -35,7 +40,7 @@ func TestAccountService(t *testing.T) {
 
 	t.Run("get Accounts", func(t *testing.T) {
 		var got []*models.Account
-		want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
+		want := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
 		accountService.CreateAccount(want)
 		got, err := accountService.GetAccounts()

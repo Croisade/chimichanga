@@ -172,6 +172,7 @@ func TestLogin(t *testing.T) {
 
 func TestToken(t *testing.T) {
 	t.Run("Should refresh a token", func(t *testing.T) {
+		accountCollection.DeleteMany(ctx, bson.D{{}})
 		var refreshToken JWTtoken
 		var response *JWTtoken
 		token, _ := accountController.JWTService.CreateToken()
@@ -212,14 +213,11 @@ func TestToken(t *testing.T) {
 }
 func TestLogout(t *testing.T) {
 	t.Run("Should logout and remove token from account document", func(t *testing.T) {
+		accountCollection.DeleteMany(ctx, bson.D{{}})
 		want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 		accountService.CreateAccount(want)
 		accounts, _ := accountService.GetAccounts()
 		var logout = &services.LogoutValidation{AccountId: accounts[0].AccountId}
-
-		// token, _ := accountController.JWTService.CreateToken()
-
-		// accountCollection.FindOne(ctx, {})
 
 		r := SetupRouter()
 		r.PUT("/account/logout", accountController.Logout)
@@ -234,6 +232,7 @@ func TestLogout(t *testing.T) {
 }
 
 func TestGetAccount(t *testing.T) {
+	accountCollection.DeleteMany(ctx, bson.D{{}})
 	var response *models.Account
 	fixture := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 	account, _ := accountService.CreateAccount(fixture)
@@ -268,6 +267,7 @@ func TestGetAccounts(t *testing.T) {
 	assert.Equal(t, response[0].AccountId, account.AccountId)
 }
 func TestDeleteAccount(t *testing.T) {
+	accountCollection.DeleteMany(ctx, bson.D{{}})
 	fixture := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 	account, _ := accountService.CreateAccount(fixture)
 
@@ -282,6 +282,7 @@ func TestDeleteAccount(t *testing.T) {
 }
 
 func TestUpdateAccount(t *testing.T) {
+	accountCollection.DeleteMany(ctx, bson.D{{}})
 	fixture := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 	account, _ := accountService.CreateAccount(fixture)
 	update := &models.Account{AccountId: account.AccountId, FirstName: "Jamal"}
