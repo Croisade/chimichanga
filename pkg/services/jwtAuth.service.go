@@ -16,6 +16,11 @@ type JWTService interface {
 
 type JWTAuthService struct{}
 
+type MyCustomClaims struct {
+	Group string `json:"group"`
+	jwt.StandardClaims
+}
+
 func NewJWTAuthService() JWTAuthService {
 	return JWTAuthService{}
 }
@@ -25,14 +30,8 @@ func (j JWTAuthService) CreateToken() (string, error) {
 		log.Fatal("cannot load config:", err)
 	}
 
-	type MyCustomClaims struct {
-		Foo string `json:"foo"`
-		jwt.StandardClaims
-	}
-
-	// Create the Claims
 	claims := MyCustomClaims{
-		"bar",
+		"USER",
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Minute * 15).Unix(),
 			Issuer:    "CorroYouRun",
@@ -49,13 +48,9 @@ func (j JWTAuthService) CreateRefreshToken() (string, error) {
 	if err != nil {
 		log.Fatal("cannot load config:", err)
 	}
-	type MyCustomClaims struct {
-		Foo string `json:"foo"`
-		jwt.StandardClaims
-	}
 
 	claims := MyCustomClaims{
-		"bar",
+		"USER",
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 168).Unix(),
 			Issuer:    "CorroYouRun",
