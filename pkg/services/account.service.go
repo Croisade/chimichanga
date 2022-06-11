@@ -106,7 +106,6 @@ func (s *AccountServiceImpl) DeleteAccount(accountId string) error {
 
 func (s *AccountServiceImpl) UpdateAccount(account *models.Account) (*models.Account, error) {
 	filter := bson.M{"accountId": account.AccountId}
-	var err error
 	var result *models.Account
 
 	existingAccount, err := s.GetAccount(account.AccountId)

@@ -25,15 +25,13 @@ var (
 	mongoClient *mongo.Client
 	err         error
 
-	jwtservice services.JWTService
-
 	accountService    services.AccountService
 	accountController controllers.AccountController
 	accountCollection *mongo.Collection
 
-	usercollection *mongo.Collection
-	userservice    services.UserService
-	usercontroller controllers.UserController
+	runCollection *mongo.Collection
+	runService    services.RunService
+	runController controllers.RunController
 )
 
 func init() {
@@ -60,12 +58,12 @@ func init() {
 	fmt.Println("mongo connection established")
 
 	accountCollection = mongoClient.Database("CorroYouRun").Collection("accounts")
-	usercollection = mongoClient.Database("CorroYouRun").Collection("runs")
+	runCollection = mongoClient.Database("CorroYouRun").Collection("runs")
 
 	jwtService := services.NewJWTAuthService()
 
-	userservice = services.NewUserService(usercollection, ctx)
-	usercontroller = controllers.New(userservice)
+	runService = services.NewRunService(runCollection, ctx)
+	runController = controllers.NewRunController(runService)
 
 	accountService = services.NewAccountServiceImpl(accountCollection, ctx)
 	accountController = controllers.NewAccountController(accountService, jwtService)
@@ -77,7 +75,7 @@ func main() {
 	defer mongoClient.Disconnect(ctx)
 
 	basePath := server.Group("/v1")
-	usercontroller.RegisterUserRoutes(basePath)
+	runController.RegisterRunRoutes(basePath)
 	accountController.RegisterAccountRoutes(basePath)
 
 	srv := &http.Server{

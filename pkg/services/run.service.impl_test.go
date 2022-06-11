@@ -4,12 +4,8 @@ import (
 	"context"
 	"log"
 	"testing"
-	"time"
 
-	"github.com/croisade/chimichanga/pkg/models"
-	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -44,20 +40,21 @@ func TestMain(m *testing.M) {
 	m.Run()
 	// teardown()
 }
-func TestCreateUser(t *testing.T) {
-	want := &models.User{}
-	createdAt := primitive.Timestamp{
-		T: uint32(time.Now().Unix()),
-	}
-	usr := &models.User{UserId: "user123", CreatedAt: createdAt, UpdatedAt: createdAt, Runs: models.Runs{Pace: 5.0, Time: "5:00", Distance: "5 miles", Date: createdAt, Lap: 2, SessionId: "123", UserId: "user123"}}
 
-	userService := NewUserService(runsCollection, ctx)
-	got, err := userService.CreateUser(usr)
-	assert.Nil(t, err)
+// func TestCreateUser(t *testing.T) {
+// 	want := &models.User{}
+// 	createdAt := primitive.Timestamp{
+// 		T: uint32(time.Now().Unix()),
+// 	}
+// 	usr := &models.User{UserId: "user123", CreatedAt: createdAt, UpdatedAt: createdAt, Runs: models.Runs{Pace: 5.0, Time: "5:00", Distance: "5 miles", Date: createdAt, Lap: 2, SessionId: "123", UserId: "user123"}}
 
-	query := bson.D{bson.E{Key: "userId", Value: "user123"}}
-	findErr := runsCollection.FindOne(ctx, query).Decode(&want)
+// 	userService := NewUserService(runsCollection, ctx)
+// 	got, err := userService.CreateUser(usr)
+// 	assert.Nil(t, err)
 
-	assert.Nil(t, findErr)
-	assert.Equal(t, want, got)
-}
+// 	query := bson.D{bson.E{Key: "userId", Value: "user123"}}
+// 	findErr := runsCollection.FindOne(ctx, query).Decode(&want)
+
+// 	assert.Nil(t, findErr)
+// 	assert.Equal(t, want, got)
+// }
