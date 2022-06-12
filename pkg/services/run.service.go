@@ -26,16 +26,16 @@ type RunServiceImpl struct {
 }
 
 type RunRequest struct {
-	AccountId string `json:"accountId" bson:"runId" binding:"required"`
+	AccountId string `json:"accountId" bson:"accountId" binding:"required"`
 	RunId     string `json:"runId" bson:"runId" binding:"required"`
 }
 
 type RunFetchRequest struct {
-	AccountId string `json:"accountId" bson:"runId" binding:"required"`
+	AccountId string `json:"accountId" bson:"accountId" binding:"required"`
 }
 
 type RunUpdateRequest struct {
-	AccountId string  `json:"accountId" bson:"runId" binding:"required"`
+	AccountId string  `json:"accountId" bson:"accountId" binding:"required"`
 	RunId     string  `json:"runId" bson:"runId" binding:"required"`
 	Pace      float32 `json:"pace" bson:"pace"`
 	Time      string  `json:"time" bson:"time"`
@@ -58,8 +58,15 @@ func (u *RunServiceImpl) CreateRun(run *models.Run) (*models.Run, error) {
 	run.CreatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 	run.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
 
-	_, err := u.runCollection.InsertOne(u.ctx, result)
-	return run, err
+	_, err := u.runCollection.InsertOne(u.ctx, run)
+
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"accountId": run.AccountId}
+	err = u.runCollection.FindOne(u.ctx, filter).Decode(&result)
+	return result, err
 }
 
 func (u *RunServiceImpl) GetRun(runRequest *RunRequest) (*models.Run, error) {
@@ -72,7 +79,7 @@ func (u *RunServiceImpl) GetRun(runRequest *RunRequest) (*models.Run, error) {
 
 func (u *RunServiceImpl) GetAll(runAccountId *RunFetchRequest) ([]*models.Run, error) {
 	var runs []*models.Run
-	filter := bson.M{"accountId": runAccountId}
+	filter := bson.M{"accountId": runAccountId.AccountId}
 
 	cursor, err := u.runCollection.Find(u.ctx, filter)
 

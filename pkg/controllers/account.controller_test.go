@@ -21,24 +21,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func SetupRouter() *gin.Engine {
-	router := gin.Default()
-	gin.SetMode(gin.TestMode)
-	// {
-	// 	userGroup := v1.Group("user")
-	// 	{
-	// 		account := NewAccountController()
-	// 		userGroup.GET("/:id", user.Retrieve)
-	// 	}
-	// }
-	return router
-}
-
 var accountCollection *mongo.Collection
 var accountController AccountController
 var accountService *services.AccountServiceImpl
 var runsCollection *mongo.Collection
+var runController RunController
+var runService *services.RunServiceImpl
+
 var ctx context.Context
+var r *gin.Engine
 
 func setup() {
 	ctx = context.TODO()
@@ -60,10 +51,33 @@ func setup() {
 	}
 
 	accountService = services.NewAccountServiceImpl(accountCollection, ctx)
+	runService = services.NewRunService(accountCollection, ctx)
 	jwtService := services.NewJWTAuthService()
 
 	accountController = NewAccountController(accountService, jwtService)
+	runController = NewRunController(runService, jwtService)
+	r = SetupRouter()
 	log.Println("\n-----Setup complete-----")
+}
+
+func SetupRouter() *gin.Engine {
+	router := gin.Default()
+	gin.SetMode(gin.TestMode)
+	{
+		accountGroup := router.Group("account")
+		{
+			accountGroup.POST("/create", accountController.CreateAccount)
+		}
+		runGroup := router.Group("run")
+		{
+			runGroup.POST("/create", runController.CreateRun)
+			runGroup.GET("", runController.GetRun)
+			runGroup.GET("/fetch", runController.GetAll)
+			runGroup.PUT("/update", runController.UpdateRun)
+			runGroup.DELETE("/delete", runController.DeleteRun)
+		}
+	}
+	return router
 }
 
 func TestMain(m *testing.M) {
@@ -80,8 +94,6 @@ func TestCreate(t *testing.T) {
 	t.Run("Should create an account", func(t *testing.T) {
 		account := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
 		response := &models.Account{}
-		r := SetupRouter()
-		r.POST("/account/create", accountController.CreateAccount)
 
 		jsonValue, _ := json.Marshal(account)
 		req, _ := http.NewRequest("POST", "/account/create", bytes.NewBuffer(jsonValue))
@@ -96,9 +108,6 @@ func TestCreate(t *testing.T) {
 	t.Run("Should raise if a required field is missing", func(t *testing.T) {
 		account := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first"}
 		response := &Response{}
-
-		r := SetupRouter()
-		r.POST("/account/create", accountController.CreateAccount)
 
 		jsonValue, _ := json.Marshal(account)
 		req, _ := http.NewRequest("POST", "/account/create", bytes.NewBuffer(jsonValue))

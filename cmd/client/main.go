@@ -63,7 +63,7 @@ func init() {
 	jwtService := services.NewJWTAuthService()
 
 	runService = services.NewRunService(runCollection, ctx)
-	runController = controllers.NewRunController(runService)
+	runController = controllers.NewRunController(runService, jwtService)
 
 	accountService = services.NewAccountServiceImpl(accountCollection, ctx)
 	accountController = controllers.NewAccountController(accountService, jwtService)

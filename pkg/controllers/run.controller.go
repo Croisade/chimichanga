@@ -3,6 +3,7 @@ package controllers
 import (
 	"net/http"
 
+	"github.com/croisade/chimichanga/pkg/middleware"
 	"github.com/croisade/chimichanga/pkg/models"
 	"github.com/croisade/chimichanga/pkg/services"
 	"github.com/gin-gonic/gin"
@@ -10,11 +11,13 @@ import (
 
 type RunController struct {
 	RunService services.RunService
+	JWTService services.JWTAuthService
 }
 
-func NewRunController(runService services.RunService) RunController {
+func NewRunController(runService services.RunService, jwtService services.JWTAuthService) RunController {
 	return RunController{
 		RunService: runService,
+		JWTService: jwtService,
 	}
 }
 
@@ -25,12 +28,14 @@ func (rc *RunController) CreateRun(ctx *gin.Context) {
 		return
 	}
 
-	_, err := rc.RunService.CreateRun(&run)
+	result, err := rc.RunService.CreateRun(&run)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, gin.H{"message": "success"})
+
+	ctx.JSON(http.StatusOK, result)
+	return
 }
 
 func (rc *RunController) GetRun(ctx *gin.Context) {
@@ -40,12 +45,12 @@ func (rc *RunController) GetRun(ctx *gin.Context) {
 		ctx.JSON(http.StatusBadRequest, gin.H{"message": err.Error()})
 		return
 	}
-	usr, err := rc.RunService.GetRun(run)
+	returnedRun, err := rc.RunService.GetRun(run)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"message": err.Error()})
 		return
 	}
-	ctx.JSON(http.StatusOK, usr)
+	ctx.JSON(http.StatusOK, returnedRun)
 	return
 }
 
@@ -100,10 +105,10 @@ func (rc *RunController) DeleteRun(ctx *gin.Context) {
 }
 
 func (rc *RunController) RegisterRunRoutes(rg *gin.RouterGroup) {
-	userRoute := rg.Group("/run")
-	userRoute.POST("/create", rc.CreateRun)
-	userRoute.GET("/", rc.GetRun)
-	userRoute.GET("/fetch", rc.GetAll)
-	userRoute.DELETE("/delete", rc.DeleteRun)
-	userRoute.PUT("/update", rc.UpdateRun)
+	runRoute := rg.Group("/run", middleware.AuthorizeUserJWT())
+	runRoute.POST("/create", rc.CreateRun)
+	runRoute.GET("", rc.GetRun)
+	runRoute.GET("/fetch", rc.GetAll)
+	runRoute.DELETE("/delete", rc.DeleteRun)
+	runRoute.PUT("/update", rc.UpdateRun)
 }
