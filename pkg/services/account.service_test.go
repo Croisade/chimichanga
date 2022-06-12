@@ -71,28 +71,28 @@ func TestAccountService(t *testing.T) {
 		assert.ErrorContains(t, err, "no documents")
 	})
 
-	t.Run("get Accounts", func(t *testing.T) {
-		outSlice := make(chan []*models.Account)
-		out := make(chan *mongo.DeleteResult)
-		go func() {
-			result, _ := accountCollection.DeleteMany(ctx, bson.D{{}})
-			out <- result
-		}()
-		<-out
-		var got []*models.Account
+	// t.Run("get Accounts", func(t *testing.T) {
+	// 	outSlice := make(chan []*models.Account)
+	// 	out := make(chan *mongo.DeleteResult)
+	// 	go func() {
+	// 		result, _ := accountCollection.DeleteMany(ctx, bson.D{{}})
+	// 		out <- result
+	// 	}()
+	// 	<-out
+	// 	var got []*models.Account
 
-		firstAcc := &models.Account{Email: "test3@example.com", Password: "password", FirstName: "first", LastName: "last"}
-		newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
+	// 	firstAcc := &models.Account{Email: "test3@example.com", Password: "password", FirstName: "first", LastName: "last"}
+	// 	newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
 
-		go createAccountRoutine(accountService, []*models.Account{firstAcc, newAcc}, outSlice)
-		<-outSlice
+	// 	go createAccountRoutine(accountService, []*models.Account{firstAcc, newAcc}, outSlice)
+	// 	<-outSlice
 
-		got, err := accountService.GetAccounts()
-		// man, _ := json.MarshalIndent(got, "", "    ")
-		// fmt.Println(string(man))
+	// 	got, err := accountService.GetAccounts()
+	// 	// man, _ := json.MarshalIndent(got, "", "    ")
+	// 	// fmt.Println(string(man))
 
-		assert.Nil(t, err)
-		assert.Equal(t, 2, len(got))
-		// assert.Equal(t, got[0].AccountId, .AccountId)
-	})
+	// 	assert.Nil(t, err)
+	// 	assert.Equal(t, 2, len(got))
+	// 	// assert.Equal(t, got[0].AccountId, .AccountId)
+	// })
 }
