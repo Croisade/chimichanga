@@ -5,6 +5,7 @@
         "croisade",
         "gonic",
         "mongodb",
+        "readpref",
         "stretchr"
     ]
 }

@@ -8,27 +8,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
+func createAccountRoutine(f *AccountServiceImpl, list []*models.Account, out chan<- []*models.Account) {
+	var result []*models.Account
+	for i := 0; i < 2; i++ {
+		account, _ := f.CreateAccount(list[i])
+		result = append(result, account)
+	}
+	out <- result
+}
+
 func TestAccountService(t *testing.T) {
 	accountService := NewAccountServiceImpl(accountCollection, ctx)
 	want := &models.Account{Email: "test@example.com", Password: "password", FirstName: "first", LastName: "last"}
-
-	// t.Run("get Accounts", func(t *testing.T) {
-	// 	accountCollection.DeleteMany(ctx, bson.D{{}})
-	// 	var got []*models.Account
-
-	// 	firstAcc := &models.Account{Email: "test3@example.com", Password: "password", FirstName: "first", LastName: "last"}
-	// 	newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
-	// 	accountService.CreateAccount(firstAcc)
-	// 	accountService.CreateAccount(newAcc)
-	// 	// go f(accountService, []*models.Account{firstAcc, newAcc})
-	// 	time.Sleep(time.Second * 3)
-	// 	got, err := accountService.GetAccounts()
-	// 	man, _ := json.MarshalIndent(got, "", "    ")
-	// 	fmt.Println(string(man))
-
-	// 	assert.Nil(t, err)
-	// 	assert.Equal(t, 2, len(got))
-	// })
 
 	t.Run("create Account", func(t *testing.T) {
 		accountCollection.DeleteMany(ctx, bson.D{{}})
@@ -78,4 +69,29 @@ func TestAccountService(t *testing.T) {
 
 		assert.ErrorContains(t, err, "no documents")
 	})
+
+	// t.Run("get Accounts", func(t *testing.T) {
+	// 	outSlice := make(chan []*models.Account)
+	// 	out := make(chan *mongo.DeleteResult)
+	// 	go func() {
+	// 		result, _ := accountCollection.DeleteMany(ctx, bson.D{{}})
+	// 		out <- result
+	// 	}()
+	// 	<-out
+	// 	var got []*models.Account
+
+	// 	firstAcc := &models.Account{Email: "test3@example.com", Password: "password", FirstName: "first", LastName: "last"}
+	// 	newAcc := &models.Account{Email: "test2@example.com", Password: "password", FirstName: "first", LastName: "last"}
+
+	// 	go createAccountRoutine(accountService, []*models.Account{firstAcc, newAcc}, outSlice)
+	// 	<-outSlice
+
+	// 	got, err := accountService.GetAccounts()
+	// 	// man, _ := json.MarshalIndent(got, "", "    ")
+	// 	// fmt.Println(string(man))
+
+	// 	assert.Nil(t, err)
+	// 	assert.Equal(t, 2, len(got))
+	// 	// assert.Equal(t, got[0].AccountId, .AccountId)
+	// })
 }

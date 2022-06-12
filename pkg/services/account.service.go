@@ -72,7 +72,7 @@ func (s *AccountServiceImpl) CreateAccount(account *models.Account) (*models.Acc
 
 	filter := bson.M{"accountId": account.AccountId}
 	err = s.accountcollection.FindOne(s.ctx, filter).Decode(&result)
-	return account, err
+	return result, err
 }
 
 func (s *AccountServiceImpl) GetAccount(accountId string) (*models.Account, error) {
@@ -106,7 +106,6 @@ func (s *AccountServiceImpl) DeleteAccount(accountId string) error {
 
 func (s *AccountServiceImpl) UpdateAccount(account *models.Account) (*models.Account, error) {
 	filter := bson.M{"accountId": account.AccountId}
-	var err error
 	var result *models.Account
 
 	existingAccount, err := s.GetAccount(account.AccountId)
