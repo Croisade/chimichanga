@@ -6,7 +6,6 @@ import (
 	"github.com/croisade/chimichanga/pkg/models"
 	"github.com/stretchr/testify/assert"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func createAccountRoutine(f *AccountServiceImpl, list []*models.Account, out chan<- []*models.Account) {
