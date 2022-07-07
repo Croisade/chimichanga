@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
-	"github.com/croisade/chimichanga/pkg/middleware"
 	"github.com/croisade/chimichanga/pkg/models"
 	"github.com/croisade/chimichanga/pkg/services"
 	"github.com/gin-gonic/gin"
@@ -84,10 +84,12 @@ func (rc *RunController) GetRun(ctx *gin.Context) {
 }
 
 func (rc *RunController) GetAll(ctx *gin.Context) {
-	var runAccountId *services.RunFetchRequest
-
-	if err := ctx.ShouldBindJSON(&runAccountId); err != nil {
-		rc.handleValidationError(ctx, err)
+	// var runAccountId *services.RunFetchRequest
+	runAccountId := ctx.Param("accountId")
+	fmt.Println(runAccountId)
+	fmt.Println(ctx.Request.Body)
+	if err := ctx.ShouldBind(&runAccountId); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
 		return
 	}
 
@@ -134,10 +136,14 @@ func (rc *RunController) DeleteRun(ctx *gin.Context) {
 }
 
 func (rc *RunController) RegisterRunRoutes(rg *gin.RouterGroup) {
-	runRoute := rg.Group("/run", middleware.AuthorizeUserJWT())
+	runRoute := rg.Group("/run")
+	// runRoute.Use(gindump.Dump())
+	// runRoute.Use(gindump.DumpWithOptions(true, true, true, true, true, func(dumpStr string) {
+	// 	fmt.Println(dumpStr)
+	// }))
 	runRoute.POST("/create", rc.CreateRun)
 	runRoute.GET("", rc.GetRun)
-	runRoute.GET("/fetch", rc.GetAll)
+	runRoute.GET("/fetch/:accountId", rc.GetAll)
 	runRoute.DELETE("/delete", rc.DeleteRun)
 	runRoute.PUT("/update", rc.UpdateRun)
 }

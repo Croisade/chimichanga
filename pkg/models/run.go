@@ -5,7 +5,7 @@ import (
 )
 
 type Run struct {
-	Pace      float32             `json:"pace,omitempty" bson:"pace,omitempty"`
+	Speed     float32             `json:"speed,omitempty" bson:"speed,omitempty"`
 	Time      string              `json:"time,omitempty" bson:"time,omitempty"`
 	Distance  float32             `json:"distance,omitempty" bson:"distance,omitempty"`
 	Lap       int                 `json:"lap,omitempty" bson:"lap,omitempty"`

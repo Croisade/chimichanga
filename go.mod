@@ -4,6 +4,8 @@ go 1.18
 
 require github.com/golang-jwt/jwt v3.2.2+incompatible
 
+require github.com/tpkeeper/gin-dump v1.0.1 // indirect
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect

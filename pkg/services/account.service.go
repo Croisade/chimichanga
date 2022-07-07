@@ -16,7 +16,7 @@ import (
 
 type AccountService interface {
 	CreateAccount(*models.Account) (*models.Account, error)
-	GetAccount(string) (*models.Account, error)
+	GetAccount(*GetAccountRequest) (*models.Account, error)
 	GetAccounts() ([]*models.Account, error)
 	FindByRefreshToken(string) (*models.Account, error)
 	DeleteAccount(string) error
@@ -37,6 +37,11 @@ type LoginValidation struct {
 
 type LogoutValidation struct {
 	AccountId string `json:"accountId" binding:"required"`
+}
+
+type GetAccountRequest struct {
+	Email     string `json:"email" bson:"email"`
+	AccountId string `json:"accountId" bson:"accountId"`
 }
 
 func NewAccountServiceImpl(accountcollection *mongo.Collection, ctx context.Context) *AccountServiceImpl {
@@ -75,11 +80,26 @@ func (s *AccountServiceImpl) CreateAccount(account *models.Account) (*models.Acc
 	return result, err
 }
 
-func (s *AccountServiceImpl) GetAccount(accountId string) (*models.Account, error) {
+func (s *AccountServiceImpl) GetAccount(request *GetAccountRequest) (*models.Account, error) {
 	var result *models.Account
+	var filter primitive.M
 	var err error
 
-	filter := bson.M{"accountId": accountId}
+	// filter = bson.M{"email": request.Email}
+
+	// fmt.Println(request)
+	// if request == nil {
+	// 	panic("Bad Request")
+	// }
+	if request.Email != "" {
+		filter = bson.M{"email": request.Email}
+	}
+	if request.AccountId != "" {
+		filter = bson.M{"accountId": request.AccountId}
+	}
+
+	fmt.Println(filter)
+
 	err = s.accountcollection.FindOne(s.ctx, filter).Decode(&result)
 
 	return result, err
@@ -108,7 +128,7 @@ func (s *AccountServiceImpl) UpdateAccount(account *models.Account) (*models.Acc
 	filter := bson.M{"accountId": account.AccountId}
 	var result *models.Account
 
-	existingAccount, err := s.GetAccount(account.AccountId)
+	existingAccount, err := s.GetAccount(&GetAccountRequest{AccountId: account.AccountId})
 
 	if err != nil {
 		return nil, err

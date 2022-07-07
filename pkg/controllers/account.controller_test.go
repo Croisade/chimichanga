@@ -247,9 +247,9 @@ func TestGetAccount(t *testing.T) {
 	account, _ := accountService.CreateAccount(fixture)
 
 	r := SetupRouter()
-	r.GET("/account/get/:accountId", accountController.GetAccount)
+	r.GET("/account/get/:email", accountController.GetAccount)
 
-	req, _ := http.NewRequest("GET", fmt.Sprintf("/account/get/%v", account.AccountId), nil)
+	req, _ := http.NewRequest("GET", fmt.Sprintf("/account/get/%v", account.Email), nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

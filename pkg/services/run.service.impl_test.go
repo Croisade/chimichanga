@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestCreateRun(t *testing.T) {
-	run := &models.Run{Pace: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "123"}
+	run := &models.Run{Speed: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "123"}
 	response := &models.Run{}
 
 	runService := NewRunService(runsCollection, ctx)
@@ -55,5 +55,5 @@ func TestCreateRun(t *testing.T) {
 	findErr := runsCollection.FindOne(ctx, query).Decode(&response)
 
 	assert.Nil(t, findErr)
-	assert.Equal(t, response.Pace, got.Pace)
+	assert.Equal(t, response.Speed, got.Speed)
 }

@@ -46,7 +46,7 @@ func TestAccountService(t *testing.T) {
 		accountCollection.DeleteMany(ctx, bson.D{{}})
 		_, err := accountService.CreateAccount(want)
 		var got *models.Account
-		got, err = accountService.GetAccount(want.AccountId)
+		got, err = accountService.GetAccount(want.Email)
 
 		assert.Nil(t, err)
 		assert.Contains(t, got.AccountId, want.AccountId)

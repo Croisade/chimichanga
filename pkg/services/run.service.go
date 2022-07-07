@@ -15,7 +15,7 @@ import (
 type RunService interface {
 	CreateRun(*models.Run) (*models.Run, error)
 	GetRun(*RunRequest) (*models.Run, error)
-	GetAll(*RunFetchRequest) ([]*models.Run, error)
+	GetAll(string) ([]*models.Run, error)
 	UpdateRun(*RunUpdateRequest) (*models.Run, error)
 	DeleteRun(*RunRequest) error
 }
@@ -37,7 +37,7 @@ type RunFetchRequest struct {
 type RunUpdateRequest struct {
 	AccountId string  `json:"accountId" bson:"accountId" binding:"required"`
 	RunId     string  `json:"runId" bson:"runId" binding:"required"`
-	Pace      float32 `json:"pace" bson:"pace"`
+	Speed     float32 `json:"speed" bson:"speed"`
 	Time      string  `json:"time" bson:"time"`
 	Distance  float32 `json:"distance" bson:"distance"`
 	Lap       int     `json:"lap" bson:"lap"`
@@ -77,11 +77,14 @@ func (u *RunServiceImpl) GetRun(runRequest *RunRequest) (*models.Run, error) {
 	return run, err
 }
 
-func (u *RunServiceImpl) GetAll(runAccountId *RunFetchRequest) ([]*models.Run, error) {
+func (u *RunServiceImpl) GetAll(runAccountId string) ([]*models.Run, error) {
 	var runs []*models.Run
-	filter := bson.M{"accountId": runAccountId.AccountId}
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{"createdAt", -1}})
 
-	cursor, err := u.runCollection.Find(u.ctx, filter)
+	filter := bson.M{"accountId": runAccountId}
+
+	cursor, err := u.runCollection.Find(u.ctx, filter, findOptions)
 
 	if err != nil {
 		return nil, err
@@ -130,8 +133,8 @@ func (u *RunServiceImpl) UpdateRun(run *RunUpdateRequest) (*models.Run, error) {
 	if run.Lap != 0 {
 		existingRun.Lap = run.Lap
 	}
-	if run.Pace != 0.0 {
-		existingRun.Pace = run.Pace
+	if run.Speed != 0.0 {
+		existingRun.Speed = run.Speed
 	}
 
 	existingRun.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}

@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/croisade/chimichanga/pkg/middleware"
@@ -92,8 +93,23 @@ func (ac *AccountController) CreateAccount(ctx *gin.Context) {
 }
 
 func (ac *AccountController) GetAccount(ctx *gin.Context) {
-	accountId := ctx.Param("accountId")
-	result, err := ac.AccountService.GetAccount(accountId)
+	var req *services.GetAccountRequest
+	var getAccount services.GetAccountRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"errors": err.Error()})
+		return
+	}
+
+	getAccount.AccountId = req.AccountId
+	getAccount.Email = req.Email
+	fmt.Println(getAccount)
+
+	// if req.AccountId == "" && req.Email == "" {
+	// 	ctx.JSON(http.StatusBadRequest, gin.H{"errors": "Bad Request"})
+	// 	return
+	// }
+
+	result, err := ac.AccountService.GetAccount(&getAccount)
 	if err != nil {
 		ctx.JSON(http.StatusBadGateway, gin.H{"errors": err.Error()})
 		return
@@ -252,7 +268,9 @@ func (ac *AccountController) RegisterAccountRoutes(rg *gin.RouterGroup) {
 	accountRouteNoMw.POST("/create", ac.CreateAccount)
 	accountRouteNoMw.PUT("/login", ac.Login)
 	accountRouteUser := rg.Group("/account", middleware.AuthorizeUserJWT())
-	accountRouteUser.GET("/get/:accountId", ac.GetAccount)
+
+	// accountRouteUser.Use(gindump.Dump())
+	accountRouteUser.POST("/get", ac.GetAccount)
 	accountRouteUser.DELETE("/delete/:accountId", ac.DeleteAccount)
 	accountRouteUser.PUT("/update", ac.UpdateAccount)
 	accountRouteUser.PUT("/token", ac.Token)

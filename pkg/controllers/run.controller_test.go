@@ -15,7 +15,7 @@ import (
 )
 
 func TestCreateRun(t *testing.T) {
-	run := &models.Run{Pace: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "123"}
+	run := &models.Run{Speed: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "123"}
 	response := &models.Run{}
 
 	jsonValue, _ := json.Marshal(run)
@@ -26,12 +26,12 @@ func TestCreateRun(t *testing.T) {
 	fmt.Println(w)
 	json.Unmarshal(w.Body.Bytes(), response)
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.Equal(t, run.Pace, response.Pace)
+	assert.Equal(t, run.Speed, response.Speed)
 }
 
 func TestGetRun(t *testing.T) {
 	var response *models.Run
-	run := &models.Run{Pace: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "234"}
+	run := &models.Run{Speed: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "234"}
 	createdRun, _ := runService.CreateRun(run)
 	request := &services.RunRequest{AccountId: createdRun.AccountId, RunId: createdRun.RunId}
 
@@ -47,7 +47,7 @@ func TestGetRun(t *testing.T) {
 }
 
 func TestUpdateRun(t *testing.T) {
-	run := &models.Run{Pace: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "567"}
+	run := &models.Run{Speed: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "567"}
 	createdRun, _ := runService.CreateRun(run)
 	request := &services.RunUpdateRequest{AccountId: createdRun.AccountId, RunId: createdRun.RunId, Lap: 1}
 	var response *models.Run
@@ -62,7 +62,7 @@ func TestUpdateRun(t *testing.T) {
 	assert.Equal(t, 1, response.Lap)
 }
 func TestDeleteRun(t *testing.T) {
-	run := &models.Run{Pace: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "890"}
+	run := &models.Run{Speed: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "890"}
 	createdRun, _ := runService.CreateRun(run)
 	request := &services.RunRequest{AccountId: createdRun.AccountId, RunId: createdRun.RunId}
 
@@ -79,7 +79,7 @@ func TestDeleteRun(t *testing.T) {
 
 func TestFetchRun(t *testing.T) {
 	runsCollection.DeleteMany(ctx, bson.D{{}})
-	run := &models.Run{Pace: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "123"}
+	run := &models.Run{Speed: 6.0, Lap: 0, Distance: 3.0, Time: "30:00", Incline: 0.0, AccountId: "123"}
 	createdRun, _ := runService.CreateRun(run)
 
 	request := &services.RunFetchRequest{AccountId: createdRun.AccountId}
