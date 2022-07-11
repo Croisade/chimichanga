@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"strconv"
 	"time"
 
 	"github.com/croisade/chimichanga/pkg/models"
@@ -15,7 +16,7 @@ import (
 type RunService interface {
 	CreateRun(*models.Run) (*models.Run, error)
 	GetRun(*RunRequest) (*models.Run, error)
-	GetAll(string) ([]*models.Run, error)
+	GetAll(*RunFetchRequest) ([]*models.Run, error)
 	UpdateRun(*RunUpdateRequest) (*models.Run, error)
 	DeleteRun(*RunRequest) error
 }
@@ -32,6 +33,7 @@ type RunRequest struct {
 
 type RunFetchRequest struct {
 	AccountId string `json:"accountId" bson:"accountId" binding:"required"`
+	Date      string `json:"date" bson:"date"`
 }
 
 type RunUpdateRequest struct {
@@ -55,8 +57,8 @@ func (u *RunServiceImpl) CreateRun(run *models.Run) (*models.Run, error) {
 	var result *models.Run
 
 	run.RunId = primitive.NewObjectID().Hex()
-	run.CreatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
-	run.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
+	run.CreatedAt = time.Now()
+	run.UpdatedAt = time.Now()
 
 	_, err := u.runCollection.InsertOne(u.ctx, run)
 
@@ -77,12 +79,25 @@ func (u *RunServiceImpl) GetRun(runRequest *RunRequest) (*models.Run, error) {
 	return run, err
 }
 
-func (u *RunServiceImpl) GetAll(runAccountId string) ([]*models.Run, error) {
+func (u *RunServiceImpl) GetAll(runFetchRequest *RunFetchRequest) ([]*models.Run, error) {
 	var runs []*models.Run
+	var filter primitive.M
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{"createdAt", -1}})
 
-	filter := bson.M{"accountId": runAccountId}
+	if runFetchRequest.Date != "" {
+		i, err := strconv.ParseInt(runFetchRequest.Date, 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		filter = bson.M{"accountId": runFetchRequest.AccountId, "createdAt": bson.M{
+			"$gt": time.Unix(i/1000, 0),
+			"$lt": time.Unix((i/1000)+86400, 0),
+		}}
+
+	} else {
+		filter = bson.M{"accountId": runFetchRequest.AccountId}
+	}
 
 	cursor, err := u.runCollection.Find(u.ctx, filter, findOptions)
 
@@ -137,7 +152,7 @@ func (u *RunServiceImpl) UpdateRun(run *RunUpdateRequest) (*models.Run, error) {
 		existingRun.Speed = run.Speed
 	}
 
-	existingRun.UpdatedAt = primitive.Timestamp{T: uint32(time.Now().Unix())}
+	existingRun.UpdatedAt = time.Now()
 
 	upsert := false
 	after := options.After
